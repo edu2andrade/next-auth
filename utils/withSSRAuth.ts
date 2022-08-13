@@ -1,20 +1,48 @@
 import { GetServerSideProps, GetServerSidePropsContext, GetServerSidePropsResult } from "next";
 import { destroyCookie, parseCookies } from "nookies";
 import { AuthTokenError } from "../errors/AuthTokenError";
+import decode from 'jwt-decode';
+import { validateUserPermissions } from "./validateUsersPermissions";
+
+type WithSSRAuthOptions = {
+  permissions?: string[];
+  roles?: string[];
+}
 
 
 // High Order Function to validate guests:
-export function withSSRAuth<P>(fn: GetServerSideProps<P>) {
+export function withSSRAuth<P>(fn: GetServerSideProps<P>, options?: WithSSRAuthOptions) {
   return async (ctx: GetServerSidePropsContext): Promise<GetServerSidePropsResult<P>> => {
     const cookies = parseCookies(ctx);
+    const token = cookies['nextauth.token']
 
-    if (!cookies['nextauth.token']) {
+    if (!token) {
       return {
         redirect: {
           destination: '/',
           permanent: false,
         }
       }
+    }
+
+    if (options) {
+      const user = decode<{ permissions: string[], roles: string[] }>(token);
+      const { permissions, roles } = options
+  
+      const userHasVaidPermissions = validateUserPermissions({
+        user, 
+        permissions,
+        roles,
+       })
+
+       if (!userHasVaidPermissions) {
+        return {
+          redirect: {
+            destination: '/dashboard',
+            permanent: false,
+          }
+        }
+       }
     }
 
     try {
