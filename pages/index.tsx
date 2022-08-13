@@ -1,7 +1,9 @@
+import { GetServerSideProps } from 'next';
 import Head from 'next/head'
 import { useState, FormEvent, useContext } from 'react'
 import { AuthContext } from '../contexts/AuthContext';
 import styles from '../styles/Home.module.css'
+import { withSSRGuest } from '../utils/withSSRGest';
 
 export default function Home() {
   const [email, setEmail] = useState('');
@@ -45,3 +47,9 @@ export default function Home() {
     </div>
   )
 }
+
+export const getServerSideProps = withSSRGuest(async (ctx) => {
+    return {
+      props: {}
+    }
+});
